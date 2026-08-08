@@ -1,9 +1,9 @@
 use crate::renderer::Renderer;
-use crate::{Direction, Game, GameConfig};
+use crate::{Difficulty, Direction, Game, GameConfig};
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
-use web_sys::{Document, Event, KeyboardEvent, Window};
+use web_sys::{Document, Event, HtmlInputElement, KeyboardEvent, Window};
 
 struct App {
     game: Game,
@@ -13,6 +13,7 @@ struct App {
     last_frame_ms: Option<f64>,
     pending_direction: Option<Direction>,
     paused: bool,
+    running: bool,
 }
 
 impl App {
@@ -25,11 +26,12 @@ impl App {
             last_frame_ms: None,
             pending_direction: None,
             paused: false,
+            running: false,
         })
     }
 
     fn frame(&mut self, timestamp_ms: f64) {
-        if self.paused {
+        if self.paused || !self.running {
             self.last_frame_ms = None;
             self.renderer.render(&self.game);
             return;
@@ -54,17 +56,23 @@ impl App {
             self.pending_direction = Some(direction);
         }
     }
+
+    fn restart(&mut self, config: GameConfig) {
+        self.game = Game::new(config.width, config.height);
+        self.tick_ms = 1_000.0 / f64::from(config.moves_per_second);
+        self.accumulator_ms = 0.0;
+        self.last_frame_ms = None;
+        self.pending_direction = None;
+        self.running = true;
+    }
 }
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
-    let config = GameConfig {
-        width: 40,
-        height: 22,
-        moves_per_second: 8,
-    };
+    let config = GameConfig::preset(Difficulty::Medium);
     let app = Rc::new(RefCell::new(App::new(config)?));
     install_controls(Rc::clone(&app))?;
+    install_mode_controls(Rc::clone(&app))?;
     let animation_callback = Rc::new(RefCell::new(None));
     let callback_handle = Rc::clone(&animation_callback);
     let app_handle = Rc::clone(&app);
@@ -141,4 +149,51 @@ fn install_controls(app: Rc<RefCell<App>>) -> Result<(), JsValue> {
     window.add_event_listener_with_callback("focus", focus.as_ref().unchecked_ref())?;
     focus.forget();
     Ok(())
+}
+
+fn install_mode_controls(app: Rc<RefCell<App>>) -> Result<(), JsValue> {
+    let document = browser_document()?;
+    for (id, difficulty) in [
+        ("mode-easy", Difficulty::Easy),
+        ("mode-medium", Difficulty::Medium),
+        ("mode-hard", Difficulty::Hard),
+    ] {
+        let button = document
+            .get_element_by_id(id)
+            .ok_or_else(|| JsValue::from_str("mode button was not found"))?;
+        let mode_app = Rc::clone(&app);
+        let select_mode = Closure::<dyn FnMut(Event)>::new(move |_| {
+            mode_app
+                .borrow_mut()
+                .restart(GameConfig::preset(difficulty));
+        });
+        button.add_event_listener_with_callback("click", select_mode.as_ref().unchecked_ref())?;
+        select_mode.forget();
+    }
+
+    let width = custom_input(&document, "custom-width")?;
+    let height = custom_input(&document, "custom-height")?;
+    let speed = custom_input(&document, "custom-speed")?;
+    let custom_button = document
+        .get_element_by_id("mode-custom")
+        .ok_or_else(|| JsValue::from_str("custom mode button was not found"))?;
+    let select_custom = Closure::<dyn FnMut(Event)>::new(move |_| {
+        let config = GameConfig::custom(
+            width.value_as_number() as u16,
+            height.value_as_number() as u16,
+            speed.value_as_number() as u16,
+        );
+        app.borrow_mut().restart(config);
+    });
+    custom_button
+        .add_event_listener_with_callback("click", select_custom.as_ref().unchecked_ref())?;
+    select_custom.forget();
+    Ok(())
+}
+
+fn custom_input(document: &Document, id: &str) -> Result<HtmlInputElement, JsValue> {
+    Ok(document
+        .get_element_by_id(id)
+        .ok_or_else(|| JsValue::from_str("custom setting was not found"))?
+        .dyn_into::<HtmlInputElement>()?)
 }

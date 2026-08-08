@@ -9,6 +9,28 @@
   <body>
     <main>
       <h1>Snake</h1>
+      <section aria-labelledby="mode-heading">
+        <h2 id="mode-heading">Choose a mode</h2>
+        <button id="mode-easy" type="button">Easy</button>
+        <button id="mode-medium" type="button">Medium</button>
+        <button id="mode-hard" type="button">Hard</button>
+        <fieldset>
+          <legend>Custom</legend>
+          <label>
+            Width
+            <input id="custom-width" type="number" min="20" max="60" value="30" />
+          </label>
+          <label>
+            Height
+            <input id="custom-height" type="number" min="10" max="40" value="20" />
+          </label>
+          <label>
+            Speed
+            <input id="custom-speed" type="number" min="2" max="20" value="8" />
+          </label>
+          <button id="mode-custom" type="button">Play custom</button>
+        </fieldset>
+      </section>
       <canvas id="snake-canvas" aria-label="Snake game board"></canvas>
       <div aria-label="Snake controls">
         <button id="control-up" type="button" aria-label="Move up">Up</button>
