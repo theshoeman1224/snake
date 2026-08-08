@@ -7,6 +7,7 @@ pub struct Point {
     pub y: u16,
 }
 
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
     Up,
     Down,
@@ -104,6 +105,19 @@ impl Game {
             self.food = Self::random_food(&self.snake, self.width, self.height);
         } else {
             self.snake.pop_back();
+        }
+    }
+
+    pub fn change_direction(&mut self, direction: Direction) {
+        let reverses = matches!(
+            (self.direction, direction),
+            (Direction::Up, Direction::Down)
+                | (Direction::Down, Direction::Up)
+                | (Direction::Left, Direction::Right)
+                | (Direction::Right, Direction::Left)
+        );
+        if !reverses {
+            self.direction = direction;
         }
     }
 }
