@@ -8,3 +8,16 @@ Build the WebAssembly target:
 ```bash
 cargo build --release --target wasm32-unknown-unknown
 ```
+
+## Release build
+
+Install [Trunk](https://trunkrs.dev/) and create a self-contained static build:
+
+```bash
+cargo install trunk --locked
+./scripts/build-web.sh
+```
+
+The release script requires a clean worktree and writes optimized assets plus
+`game-manifest.json` to `dist/`. The manifest records the exact source commit,
+repository URL, and UTC build time.
