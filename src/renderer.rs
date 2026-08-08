@@ -27,8 +27,14 @@ impl Renderer {
     }
 
     pub fn render(&self, game: &Game) {
-        self.canvas.set_width(u32::from(game.width) * CELL_SIZE);
-        self.canvas.set_height(u32::from(game.height) * CELL_SIZE);
+        let width = u32::from(game.width) * CELL_SIZE;
+        let height = u32::from(game.height) * CELL_SIZE;
+        if self.canvas.width() != width {
+            self.canvas.set_width(width);
+        }
+        if self.canvas.height() != height {
+            self.canvas.set_height(height);
+        }
 
         self.context.set_fill_style_str("#07130e");
         self.context.fill_rect(

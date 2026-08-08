@@ -5,39 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Snake</title>
     <link data-trunk rel="rust" />
+    <link data-trunk rel="css" href="styles/game.css" />
   </head>
   <body>
-    <main>
-      <h1>Snake</h1>
-      <section aria-labelledby="mode-heading">
-        <h2 id="mode-heading">Choose a mode</h2>
-        <button id="mode-easy" type="button">Easy</button>
-        <button id="mode-medium" type="button">Medium</button>
-        <button id="mode-hard" type="button">Hard</button>
-        <fieldset>
-          <legend>Custom</legend>
-          <label>
-            Width
-            <input id="custom-width" type="number" min="20" max="60" value="30" />
-          </label>
-          <label>
-            Height
-            <input id="custom-height" type="number" min="10" max="40" value="20" />
-          </label>
-          <label>
-            Speed
-            <input id="custom-speed" type="number" min="2" max="20" value="8" />
-          </label>
-          <button id="mode-custom" type="button">Play custom</button>
+    <main class="game-layout">
+      <header class="game-header">
+        <p class="eyebrow">Rust + WebAssembly</p>
+        <h1>Snake<span class="cursor">_</span></h1>
+        <p>Navigate the grid. Eat the signal. Avoid your own trail.</p>
+      </header>
+
+      <section class="mode-panel" aria-labelledby="mode-heading">
+        <div class="section-heading">
+          <h2 id="mode-heading">Select protocol</h2>
+          <span>01</span>
+        </div>
+        <div class="preset-grid">
+          <button id="mode-easy" type="button"><strong>Easy</strong><span>5 moves/s</span></button>
+          <button id="mode-medium" type="button"><strong>Medium</strong><span>8 moves/s</span></button>
+          <button id="mode-hard" type="button"><strong>Hard</strong><span>12 moves/s</span></button>
+        </div>
+        <fieldset class="custom-mode">
+          <legend>Custom protocol</legend>
+          <label>Width <input id="custom-width" type="number" min="20" max="60" value="30" /></label>
+          <label>Height <input id="custom-height" type="number" min="10" max="40" value="20" /></label>
+          <label>Moves/s <input id="custom-speed" type="number" min="2" max="20" value="8" /></label>
+          <button id="mode-custom" type="button">Launch custom</button>
         </fieldset>
       </section>
-      <canvas id="snake-canvas" aria-label="Snake game board"></canvas>
-      <div aria-label="Snake controls">
-        <button id="control-up" type="button" aria-label="Move up">Up</button>
-        <button id="control-left" type="button" aria-label="Move left">Left</button>
-        <button id="control-down" type="button" aria-label="Move down">Down</button>
-        <button id="control-right" type="button" aria-label="Move right">Right</button>
-      </div>
+
+      <section class="game-panel" aria-label="Snake game">
+        <div class="hud">
+          <p>Score <strong id="score">0</strong></p>
+          <p id="game-status" aria-live="polite">Choose a mode</p>
+          <div>
+            <button id="pause-game" type="button">Pause</button>
+            <button id="restart-game" type="button">Restart</button>
+          </div>
+        </div>
+        <div class="canvas-frame">
+          <canvas id="snake-canvas" aria-label="Snake game board"></canvas>
+          <div id="game-overlay" class="game-overlay" hidden>
+            <strong>Connection terminated</strong>
+            <span>Your trail crossed the boundary.</span>
+            <button id="restart-overlay" type="button">Run again</button>
+          </div>
+        </div>
+        <p class="keyboard-help">Move with Arrow keys or WASD</p>
+        <div class="d-pad" aria-label="Snake controls">
+          <button id="control-up" class="up" type="button" aria-label="Move up">↑</button>
+          <button id="control-left" class="left" type="button" aria-label="Move left">←</button>
+          <button id="control-down" class="down" type="button" aria-label="Move down">↓</button>
+          <button id="control-right" class="right" type="button" aria-label="Move right">→</button>
+        </div>
+      </section>
     </main>
   </body>
 </html>

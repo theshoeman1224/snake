@@ -3,17 +3,23 @@ use crate::{Difficulty, Direction, Game, GameConfig};
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
-use web_sys::{Document, Event, HtmlInputElement, KeyboardEvent, Window};
+use web_sys::{Document, Element, Event, HtmlInputElement, KeyboardEvent, Window};
 
 struct App {
     game: Game,
     renderer: Renderer,
+    config: GameConfig,
     tick_ms: f64,
     accumulator_ms: f64,
     last_frame_ms: Option<f64>,
     pending_direction: Option<Direction>,
-    paused: bool,
+    manual_paused: bool,
+    focus_paused: bool,
     running: bool,
+    score: Element,
+    status: Element,
+    overlay: Element,
+    pause_button: Element,
 }
 
 impl App {
@@ -21,19 +27,26 @@ impl App {
         Ok(Self {
             game: Game::new(config.width, config.height),
             renderer: Renderer::new("snake-canvas")?,
+            config,
             tick_ms: 1_000.0 / f64::from(config.moves_per_second),
             accumulator_ms: 0.0,
             last_frame_ms: None,
             pending_direction: None,
-            paused: false,
+            manual_paused: false,
+            focus_paused: false,
             running: false,
+            score: required_element("score")?,
+            status: required_element("game-status")?,
+            overlay: required_element("game-overlay")?,
+            pause_button: required_element("pause-game")?,
         })
     }
 
     fn frame(&mut self, timestamp_ms: f64) {
-        if self.paused || !self.running {
+        if self.manual_paused || self.focus_paused || !self.running {
             self.last_frame_ms = None;
             self.renderer.render(&self.game);
+            self.update_interface();
             return;
         }
 
@@ -49,6 +62,7 @@ impl App {
         }
         self.last_frame_ms = Some(timestamp_ms);
         self.renderer.render(&self.game);
+        self.update_interface();
     }
 
     fn queue_direction(&mut self, direction: Direction) {
@@ -59,11 +73,39 @@ impl App {
 
     fn restart(&mut self, config: GameConfig) {
         self.game = Game::new(config.width, config.height);
+        self.config = config;
         self.tick_ms = 1_000.0 / f64::from(config.moves_per_second);
         self.accumulator_ms = 0.0;
         self.last_frame_ms = None;
         self.pending_direction = None;
+        self.manual_paused = false;
         self.running = true;
+    }
+
+    fn update_interface(&self) {
+        self.score
+            .set_text_content(Some(&self.game.score.to_string()));
+        let status = if !self.running {
+            "Choose a mode"
+        } else if self.game.over {
+            "Game over"
+        } else if self.manual_paused || self.focus_paused {
+            "Paused"
+        } else {
+            "Playing"
+        };
+        self.status.set_text_content(Some(status));
+        self.pause_button
+            .set_text_content(Some(if self.manual_paused {
+                "Resume"
+            } else {
+                "Pause"
+            }));
+        if self.game.over {
+            let _ = self.overlay.remove_attribute("hidden");
+        } else {
+            let _ = self.overlay.set_attribute("hidden", "");
+        }
     }
 }
 
@@ -99,6 +141,12 @@ fn browser_document() -> Result<Document, JsValue> {
     browser_window()?
         .document()
         .ok_or_else(|| JsValue::from_str("browser document is unavailable"))
+}
+
+fn required_element(id: &str) -> Result<Element, JsValue> {
+    browser_document()?
+        .get_element_by_id(id)
+        .ok_or_else(|| JsValue::from_str(&format!("required element #{id} was not found")))
 }
 
 fn install_controls(app: Rc<RefCell<App>>) -> Result<(), JsValue> {
@@ -141,11 +189,11 @@ fn install_controls(app: Rc<RefCell<App>>) -> Result<(), JsValue> {
     }
 
     let blur_app = Rc::clone(&app);
-    let blur = Closure::<dyn FnMut(Event)>::new(move |_| blur_app.borrow_mut().paused = true);
+    let blur = Closure::<dyn FnMut(Event)>::new(move |_| blur_app.borrow_mut().focus_paused = true);
     window.add_event_listener_with_callback("blur", blur.as_ref().unchecked_ref())?;
     blur.forget();
 
-    let focus = Closure::<dyn FnMut(Event)>::new(move |_| app.borrow_mut().paused = false);
+    let focus = Closure::<dyn FnMut(Event)>::new(move |_| app.borrow_mut().focus_paused = false);
     window.add_event_listener_with_callback("focus", focus.as_ref().unchecked_ref())?;
     focus.forget();
     Ok(())
@@ -177,17 +225,42 @@ fn install_mode_controls(app: Rc<RefCell<App>>) -> Result<(), JsValue> {
     let custom_button = document
         .get_element_by_id("mode-custom")
         .ok_or_else(|| JsValue::from_str("custom mode button was not found"))?;
+    let custom_app = Rc::clone(&app);
     let select_custom = Closure::<dyn FnMut(Event)>::new(move |_| {
         let config = GameConfig::custom(
             width.value_as_number() as u16,
             height.value_as_number() as u16,
             speed.value_as_number() as u16,
         );
-        app.borrow_mut().restart(config);
+        custom_app.borrow_mut().restart(config);
     });
     custom_button
         .add_event_listener_with_callback("click", select_custom.as_ref().unchecked_ref())?;
     select_custom.forget();
+
+    let pause_button = required_element("pause-game")?;
+    let pause_app = Rc::clone(&app);
+    let toggle_pause = Closure::<dyn FnMut(Event)>::new(move |_| {
+        let mut app = pause_app.borrow_mut();
+        if app.running && !app.game.over {
+            app.manual_paused = !app.manual_paused;
+        }
+    });
+    pause_button
+        .add_event_listener_with_callback("click", toggle_pause.as_ref().unchecked_ref())?;
+    toggle_pause.forget();
+
+    for id in ["restart-game", "restart-overlay"] {
+        let restart_button = required_element(id)?;
+        let restart_app = Rc::clone(&app);
+        let restart = Closure::<dyn FnMut(Event)>::new(move |_| {
+            let config = restart_app.borrow().config;
+            restart_app.borrow_mut().restart(config);
+        });
+        restart_button
+            .add_event_listener_with_callback("click", restart.as_ref().unchecked_ref())?;
+        restart.forget();
+    }
     Ok(())
 }
 
