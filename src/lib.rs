@@ -8,3 +8,5 @@ mod web;
 
 pub use config::{Difficulty, GameConfig};
 pub use game::{Direction, Game, Point};
+
+pub const GIT_COMMIT: &str = env!("SNAKE_GIT_SHA");

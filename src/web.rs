@@ -1,5 +1,5 @@
 use crate::renderer::Renderer;
-use crate::{Difficulty, Direction, Game, GameConfig};
+use crate::{Difficulty, Direction, Game, GameConfig, GIT_COMMIT};
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
@@ -111,6 +111,7 @@ impl App {
 
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
+    display_build_commit()?;
     let config = GameConfig::preset(Difficulty::Medium);
     let app = Rc::new(RefCell::new(App::new(config)?));
     install_controls(Rc::clone(&app))?;
@@ -126,6 +127,12 @@ pub fn start() -> Result<(), JsValue> {
     }));
 
     request_frame(animation_callback.borrow().as_ref().unwrap())?;
+    Ok(())
+}
+
+fn display_build_commit() -> Result<(), JsValue> {
+    let short_commit = GIT_COMMIT.get(..8).unwrap_or(GIT_COMMIT);
+    required_element("build-commit")?.set_text_content(Some(short_commit));
     Ok(())
 }
 

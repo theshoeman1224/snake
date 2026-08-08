@@ -80,6 +80,16 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
+.game-header .build-version {
+  margin-top: 14px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.build-version code {
+  color: var(--acid);
+}
+
 .cursor {
   animation: blink 1s steps(1) infinite;
 }
