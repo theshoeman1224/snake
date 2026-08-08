@@ -234,7 +234,8 @@ canvas {
   image-rendering: pixelated;
 }
 
-.game-overlay {
+.game-overlay,
+.countdown-overlay {
   position: absolute;
   inset: 0;
   display: grid;
@@ -246,7 +247,8 @@ canvas {
   backdrop-filter: blur(3px);
 }
 
-.game-overlay[hidden] {
+.game-overlay[hidden],
+.countdown-overlay[hidden] {
   display: none;
 }
 
@@ -258,6 +260,26 @@ canvas {
 
 .game-overlay span {
   color: var(--muted);
+}
+
+.countdown-overlay {
+  pointer-events: none;
+  background: rgba(5, 10, 8, 0.72);
+  text-transform: uppercase;
+}
+
+.countdown-overlay span {
+  color: var(--green);
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  letter-spacing: 0.22em;
+}
+
+.countdown-overlay strong {
+  color: var(--acid);
+  font-size: clamp(4rem, 16vw, 9rem);
+  line-height: 0.85;
+  text-shadow: 0 0 36px rgba(217, 255, 111, 0.35);
+  animation: countdown-pulse 1s steps(2, end) infinite;
 }
 
 .keyboard-help {
@@ -288,6 +310,10 @@ canvas {
 
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+@keyframes countdown-pulse {
+  50% { opacity: 0.68; }
 }
 
 @media (max-width: 760px) {
@@ -321,6 +347,10 @@ canvas {
 
 @media (prefers-reduced-motion: reduce) {
   .cursor {
+    animation: none;
+  }
+
+  .countdown-overlay strong {
     animation: none;
   }
 }

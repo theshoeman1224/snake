@@ -52,6 +52,10 @@
         </div>
         <div class="canvas-frame">
           <canvas id="snake-canvas" aria-label="Snake game board"></canvas>
+          <div id="countdown-overlay" class="countdown-overlay" aria-live="assertive" hidden>
+            <span>Get ready</span>
+            <strong id="countdown-value">3</strong>
+          </div>
           <div id="game-overlay" class="game-overlay" hidden>
             <strong>Connection terminated</strong>
             <span>Your trail crossed the boundary.</span>

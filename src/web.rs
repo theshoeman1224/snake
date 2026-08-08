@@ -7,6 +7,7 @@ use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{Document, Element, Event, HtmlInputElement, KeyboardEvent, Window};
 
 const REPOSITORY_API: &str = "https://api.github.com/repos/theshoeman1224/snake/commits/main";
+const COUNTDOWN_DURATION_MS: f64 = 3_000.0;
 
 struct App {
     game: Game,
@@ -19,9 +20,12 @@ struct App {
     manual_paused: bool,
     focus_paused: bool,
     running: bool,
+    countdown_ms: Option<f64>,
     score: Element,
     status: Element,
     overlay: Element,
+    countdown_overlay: Element,
+    countdown_value: Element,
     pause_button: Element,
 }
 
@@ -38,9 +42,12 @@ impl App {
             manual_paused: false,
             focus_paused: false,
             running: false,
+            countdown_ms: None,
             score: required_element("score")?,
             status: required_element("game-status")?,
             overlay: required_element("game-overlay")?,
+            countdown_overlay: required_element("countdown-overlay")?,
+            countdown_value: required_element("countdown-value")?,
             pause_button: required_element("pause-game")?,
         })
     }
@@ -48,6 +55,19 @@ impl App {
     fn frame(&mut self, timestamp_ms: f64) {
         if self.manual_paused || self.focus_paused || !self.running {
             self.last_frame_ms = None;
+            self.renderer.render(&self.game);
+            self.update_interface();
+            return;
+        }
+
+        if let Some(remaining_ms) = self.countdown_ms {
+            let elapsed_ms = self
+                .last_frame_ms
+                .map(|last_frame_ms| (timestamp_ms - last_frame_ms).min(250.0))
+                .unwrap_or_default();
+            let remaining_ms = remaining_ms - elapsed_ms;
+            self.countdown_ms = (remaining_ms > 0.0).then_some(remaining_ms);
+            self.last_frame_ms = Some(timestamp_ms);
             self.renderer.render(&self.game);
             self.update_interface();
             return;
@@ -83,6 +103,7 @@ impl App {
         self.pending_direction = None;
         self.manual_paused = false;
         self.running = true;
+        self.countdown_ms = Some(COUNTDOWN_DURATION_MS);
     }
 
     fn update_interface(&self) {
@@ -94,6 +115,8 @@ impl App {
             "Game over"
         } else if self.manual_paused || self.focus_paused {
             "Paused"
+        } else if self.countdown_ms.is_some() {
+            "Starting"
         } else {
             "Playing"
         };
@@ -108,6 +131,14 @@ impl App {
             let _ = self.overlay.remove_attribute("hidden");
         } else {
             let _ = self.overlay.set_attribute("hidden", "");
+        }
+        if let Some(remaining_ms) = self.countdown_ms {
+            let count = (remaining_ms / 1_000.0).ceil() as u32;
+            self.countdown_value
+                .set_text_content(Some(&count.to_string()));
+            let _ = self.countdown_overlay.remove_attribute("hidden");
+        } else {
+            let _ = self.countdown_overlay.set_attribute("hidden", "");
         }
     }
 }
