@@ -2,6 +2,8 @@ pub mod config;
 pub mod game;
 
 #[cfg(target_arch = "wasm32")]
+mod renderer;
+#[cfg(target_arch = "wasm32")]
 mod web;
 
 pub use config::GameConfig;
