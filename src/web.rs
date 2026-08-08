@@ -3,7 +3,10 @@ use crate::{Difficulty, Direction, Game, GameConfig, GIT_COMMIT};
 use std::cell::RefCell;
 use std::rc::Rc;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen_futures::{spawn_local, JsFuture};
 use web_sys::{Document, Element, Event, HtmlInputElement, KeyboardEvent, Window};
+
+const REPOSITORY_API: &str = "https://api.github.com/repos/theshoeman1224/snake/commits/main";
 
 struct App {
     game: Game,
@@ -112,6 +115,7 @@ impl App {
 #[wasm_bindgen(start)]
 pub fn start() -> Result<(), JsValue> {
     display_build_commit()?;
+    check_for_updates()?;
     let config = GameConfig::preset(Difficulty::Medium);
     let app = Rc::new(RefCell::new(App::new(config)?));
     install_controls(Rc::clone(&app))?;
@@ -128,6 +132,42 @@ pub fn start() -> Result<(), JsValue> {
 
     request_frame(animation_callback.borrow().as_ref().unwrap())?;
     Ok(())
+}
+
+fn check_for_updates() -> Result<(), JsValue> {
+    let status = required_element("version-status")?;
+    spawn_local(async move {
+        match latest_repository_commit().await {
+            Ok(latest) if latest == GIT_COMMIT => {
+                status.set_text_content(Some("Latest build"));
+                let _ = status.set_attribute("data-state", "current");
+            }
+            Ok(_) => {
+                status.set_text_content(Some("Update available"));
+                let _ = status.set_attribute("data-state", "outdated");
+            }
+            Err(_) => {
+                status.set_text_content(Some("Version check unavailable"));
+                let _ = status.set_attribute("data-state", "unknown");
+            }
+        }
+    });
+    Ok(())
+}
+
+async fn latest_repository_commit() -> Result<String, JsValue> {
+    let response = JsFuture::from(browser_window()?.fetch_with_str(REPOSITORY_API)).await?;
+    let response = response.dyn_into::<web_sys::Response>()?;
+    if !response.ok() {
+        return Err(JsValue::from_str(
+            "GitHub returned an unsuccessful response",
+        ));
+    }
+
+    let body = JsFuture::from(response.json()?).await?;
+    js_sys::Reflect::get(&body, &JsValue::from_str("sha"))?
+        .as_string()
+        .ok_or_else(|| JsValue::from_str("GitHub response did not include a commit SHA"))
 }
 
 fn display_build_commit() -> Result<(), JsValue> {

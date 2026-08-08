@@ -90,6 +90,19 @@ button:focus-visible {
   color: var(--acid);
 }
 
+.build-version a,
+.build-version [data-state="current"] {
+  color: var(--green);
+}
+
+.build-version [data-state="outdated"] {
+  color: #ffca62;
+}
+
+.build-version [data-state="unknown"] {
+  color: var(--muted);
+}
+
 .cursor {
   animation: blink 1s steps(1) infinite;
 }
