@@ -6,141 +6,10 @@ use crossterm::terminal::{
     EndSynchronizedUpdate, EnterAlternateScreen, LeaveAlternateScreen,
 };
 use crossterm::{execute, queue};
-use rand::Rng;
-use std::collections::VecDeque;
+use snake::config::{MIN_HEIGHT, MIN_WIDTH};
+use snake::{Direction, Game, GameConfig, Point};
 use std::io::{self, stdout, Write};
 use std::time::{Duration, Instant};
-
-const MIN_WIDTH: u16 = 20;
-const MIN_HEIGHT: u16 = 10;
-
-#[derive(Copy, Clone, PartialEq, Eq)]
-struct Point {
-    x: u16,
-    y: u16,
-}
-
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-struct Game {
-    width: u16,
-    height: u16,
-    snake: VecDeque<Point>,
-    dir: Direction,
-    food: Point,
-    score: usize,
-    over: bool,
-}
-
-#[derive(Copy, Clone)]
-struct GameConfig {
-    width: u16,
-    height: u16,
-    moves_per_second: u16,
-}
-
-impl GameConfig {
-    fn tick(self) -> Duration {
-        Duration::from_millis(1_000 / u64::from(self.moves_per_second))
-    }
-}
-
-impl Game {
-    fn new(width: u16, height: u16) -> Self {
-        let mut snake = VecDeque::new();
-        let start_x = width / 2;
-        let start_y = height / 2;
-        snake.push_back(Point {
-            x: start_x,
-            y: start_y,
-        });
-        snake.push_back(Point {
-            x: start_x - 1,
-            y: start_y,
-        });
-        let food = Game::random_food(&snake, width, height);
-        Game {
-            width,
-            height,
-            snake,
-            dir: Direction::Right,
-            food,
-            score: 0,
-            over: false,
-        }
-    }
-
-    fn random_food(snake: &VecDeque<Point>, width: u16, height: u16) -> Point {
-        let mut rng = rand::thread_rng();
-        loop {
-            let x = rng.gen_range(1..(width - 1));
-            let y = rng.gen_range(1..(height - 1));
-            let p = Point { x, y };
-            if !snake.iter().any(|s| s.x == p.x && s.y == p.y) {
-                return p;
-            }
-        }
-    }
-
-    fn step(&mut self) {
-        if self.over {
-            return;
-        }
-        let head = self.snake.front().unwrap();
-        let new_head = match self.dir {
-            Direction::Up => Point {
-                x: head.x,
-                y: head.y.saturating_sub(1),
-            },
-            Direction::Down => Point {
-                x: head.x,
-                y: head.y + 1,
-            },
-            Direction::Left => Point {
-                x: head.x.saturating_sub(1),
-                y: head.y,
-            },
-            Direction::Right => Point {
-                x: head.x + 1,
-                y: head.y,
-            },
-        };
-
-        // collisions with walls
-        if new_head.x == 0
-            || new_head.x == self.width - 1
-            || new_head.y == 0
-            || new_head.y == self.height - 1
-        {
-            self.over = true;
-            return;
-        }
-
-        // collisions with self
-        if self
-            .snake
-            .iter()
-            .any(|p| p.x == new_head.x && p.y == new_head.y)
-        {
-            self.over = true;
-            return;
-        }
-
-        self.snake.push_front(new_head);
-
-        if new_head.x == self.food.x && new_head.y == self.food.y {
-            self.score += 1;
-            self.food = Game::random_food(&self.snake, self.width, self.height);
-        } else {
-            self.snake.pop_back();
-        }
-    }
-}
 
 fn preset_config(mode: usize, max_width: u16, max_height: u16) -> GameConfig {
     let (width, height, moves_per_second) = match mode {
@@ -400,27 +269,27 @@ fn run_game<W: Write>(stdout: &mut W, config: GameConfig) -> io::Result<()> {
                 match code {
                     KeyCode::Char('q') => break 'outer,
                     KeyCode::Up => {
-                        if let Direction::Down = game.dir {
+                        if let Direction::Down = game.direction {
                         } else {
-                            game.dir = Direction::Up
+                            game.direction = Direction::Up
                         }
                     }
                     KeyCode::Down => {
-                        if let Direction::Up = game.dir {
+                        if let Direction::Up = game.direction {
                         } else {
-                            game.dir = Direction::Down
+                            game.direction = Direction::Down
                         }
                     }
                     KeyCode::Left => {
-                        if let Direction::Right = game.dir {
+                        if let Direction::Right = game.direction {
                         } else {
-                            game.dir = Direction::Left
+                            game.direction = Direction::Left
                         }
                     }
                     KeyCode::Right => {
-                        if let Direction::Left = game.dir {
+                        if let Direction::Left = game.direction {
                         } else {
-                            game.dir = Direction::Right
+                            game.direction = Direction::Right
                         }
                     }
                     _ => {}
