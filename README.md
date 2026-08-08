@@ -24,3 +24,12 @@ repository URL, and UTC build time.
 
 To copy a release into a static resume website, see
 [`docs/resume-integration.md`](docs/resume-integration.md).
+
+## Verification
+
+```bash
+cargo fmt --check
+cargo test
+cargo clippy --target wasm32-unknown-unknown -- -D warnings
+trunk build --release
+```

@@ -1,13 +1,13 @@
 use rand::Rng;
 use std::collections::VecDeque;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Point {
     pub x: u16,
     pub y: u16,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Direction {
     Up,
     Down,
@@ -89,11 +89,17 @@ impl Game {
             },
         };
 
+        let eating = new_head == self.food;
+        let occupied_length = self.snake.len() - usize::from(!eating);
         if new_head.x == 0
             || new_head.x == self.width - 1
             || new_head.y == 0
             || new_head.y == self.height - 1
-            || self.snake.contains(&new_head)
+            || self
+                .snake
+                .iter()
+                .take(occupied_length)
+                .any(|point| *point == new_head)
         {
             self.over = true;
             return;
@@ -119,5 +125,105 @@ impl Game {
         if !reverses {
             self.direction = direction;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snake_moves_forward_without_growing() {
+        let mut game = Game::new(20, 10);
+        let old_head = game.snake[0];
+        let old_length = game.snake.len();
+        game.food = Point { x: 1, y: 1 };
+
+        game.step();
+
+        assert_eq!(
+            game.snake[0],
+            Point {
+                x: old_head.x + 1,
+                y: old_head.y
+            }
+        );
+        assert_eq!(game.snake.len(), old_length);
+        assert_eq!(game.score, 0);
+    }
+
+    #[test]
+    fn eating_food_grows_the_snake_and_scores() {
+        let mut game = Game::new(20, 10);
+        let old_length = game.snake.len();
+        let head = game.snake[0];
+        game.food = Point {
+            x: head.x + 1,
+            y: head.y,
+        };
+
+        game.step();
+
+        assert_eq!(game.snake.len(), old_length + 1);
+        assert_eq!(game.score, 1);
+        assert!(!game.snake.contains(&game.food));
+    }
+
+    #[test]
+    fn wall_collision_ends_the_game() {
+        let mut game = Game::new(20, 10);
+        game.snake = VecDeque::from([Point { x: 1, y: 4 }, Point { x: 2, y: 4 }]);
+        game.direction = Direction::Left;
+
+        game.step();
+
+        assert!(game.over);
+        assert_eq!(game.snake[0], Point { x: 1, y: 4 });
+    }
+
+    #[test]
+    fn body_collision_ends_the_game() {
+        let mut game = Game::new(20, 10);
+        game.snake = VecDeque::from([
+            Point { x: 4, y: 3 },
+            Point { x: 4, y: 4 },
+            Point { x: 3, y: 4 },
+            Point { x: 3, y: 3 },
+        ]);
+        game.direction = Direction::Down;
+
+        game.step();
+
+        assert!(game.over);
+    }
+
+    #[test]
+    fn snake_can_move_into_a_vacating_tail_cell() {
+        let mut game = Game::new(20, 10);
+        game.snake = VecDeque::from([
+            Point { x: 4, y: 3 },
+            Point { x: 4, y: 4 },
+            Point { x: 3, y: 4 },
+            Point { x: 3, y: 3 },
+        ]);
+        game.direction = Direction::Left;
+        game.food = Point { x: 1, y: 1 };
+
+        game.step();
+
+        assert!(!game.over);
+        assert_eq!(game.snake[0], Point { x: 3, y: 3 });
+        assert_eq!(game.snake.len(), 4);
+    }
+
+    #[test]
+    fn direction_changes_reject_immediate_reversal() {
+        let mut game = Game::new(20, 10);
+
+        game.change_direction(Direction::Left);
+        assert_eq!(game.direction, Direction::Right);
+
+        game.change_direction(Direction::Up);
+        assert_eq!(game.direction, Direction::Up);
     }
 }
