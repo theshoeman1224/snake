@@ -21,3 +21,6 @@ cargo install trunk --locked
 The release script requires a clean worktree and writes optimized assets plus
 `game-manifest.json` to `dist/`. The manifest records the exact source commit,
 repository URL, and UTC build time.
+
+To copy a release into a static resume website, see
+[`docs/resume-integration.md`](docs/resume-integration.md).
