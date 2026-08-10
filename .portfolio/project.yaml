@@ -66,6 +66,9 @@ project:
       - name: "GitHub Actions"
         type: "ci"
         url: "https://github.com/theshoeman1224/snake/actions"
+      - name: "SonarQube Cloud"
+        type: "quality"
+        url: "https://sonarcloud.io/project/overview?id=theshoeman1224_snake"
 
   demo:
     type: "wasm"
