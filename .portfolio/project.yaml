@@ -1,0 +1,73 @@
+schema_version: 1
+
+project:
+  name: "Snake"
+  slug: "rust-wasm-snake"
+
+  tagline: "Browser Snake game powered by Rust and WebAssembly"
+
+  summary: >
+    A browser-based Snake game with its rules implemented as a reusable Rust
+    engine and delivered through WebAssembly. It combines Canvas rendering,
+    fixed-step simulation, responsive controls, and static-site packaging.
+
+  description: >
+    Snake began as a terminal game and evolved into a browser-focused
+    WebAssembly project intended for inclusion in a static engineering
+    portfolio. The platform-independent engine owns movement, growth, scoring,
+    collision handling, direction safety, and configurable difficulty modes,
+    while browser-specific modules handle animation, input, and rendering.
+
+    The frontend uses requestAnimationFrame with a fixed-timestep accumulator,
+    HTML Canvas graphics, keyboard and touch controls, pause and focus handling,
+    and a pre-game countdown. Release tooling embeds the source commit into the
+    WASM build, emits a provenance manifest, supports iframe-based portfolio
+    integration, and verifies native and WASM targets in GitHub Actions.
+
+  status: "active"
+
+  role: "Developer"
+
+  dates:
+    started: 2026-08-07
+    completed:
+
+  technologies:
+    - "Rust"
+    - "WebAssembly"
+    - "wasm-bindgen"
+    - "web-sys"
+    - "HTML Canvas"
+    - "Trunk"
+    - "GitHub Actions"
+
+  categories:
+    - "Games"
+    - "WebAssembly"
+    - "Web Development"
+    - "Automation"
+
+  highlights:
+    - "Separates platform-independent game rules from WASM-only browser and Canvas modules"
+    - "Combines requestAnimationFrame rendering with a fixed-step simulation accumulator"
+    - "Supports keyboard, touch, responsive layouts, difficulty presets, custom arenas, and focus-aware pausing"
+    - "Embeds the source commit in release builds and emits a manifest for artifact provenance"
+    - "Tests core movement and collision behavior while linting native and WASM targets in CI"
+
+  links:
+    repository: "https://github.com/theshoeman1224/snake"
+
+    primary:
+      - name: "Resume Integration Guide"
+        type: "documentation"
+        url: "https://github.com/theshoeman1224/snake/blob/main/docs/resume-integration.md"
+
+    dashboards:
+      - name: "GitHub Actions"
+        type: "ci"
+        url: "https://github.com/theshoeman1224/snake/actions"
+
+  demo:
+    type: "wasm"
+    build_command: "./scripts/build-web.sh"
+    output_directory: "dist"
